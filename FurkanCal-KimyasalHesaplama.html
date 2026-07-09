@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Havuz Dozaj" />
+  <meta name="theme-color" content="#071321" />
+  <title>Havuz Dozaj · Poolfix</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #071321 0%, #0d2137 60%, #071321 100%);
+      font-family: 'Courier New', monospace;
+      color: #d0eaff;
+      padding: 20px 14px 40px;
+    }
+    h1 { font-size: 22px; font-weight: 900; color: #4dd0ff; letter-spacing: 3px; text-transform: uppercase; text-shadow: 0 0 18px #4dd0ff55; }
+    .header { text-align: center; margin-bottom: 22px; }
+    .header .emoji { font-size: 36px; }
+    .header p { color: #3a6a88; font-size: 11px; letter-spacing: 1px; margin-top: 4px; }
+    .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(77,208,255,0.13); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+    label { font-size: 10px; color: #4a7a99; letter-spacing: 1.5px; text-transform: uppercase; display: block; margin-bottom: 5px; }
+    input[type=number] {
+      width: 100%; padding: 10px 12px;
+      background: #0d2137; border: 1px solid rgba(77,208,255,0.18);
+      border-radius: 8px; color: #d0eaff; font-size: 14px;
+      font-family: 'Courier New', monospace; outline: none;
+    }
+    .toggle-wrap { display: flex; border-radius: 9px; overflow: hidden; border: 1px solid rgba(77,208,255,0.2); margin-bottom: 12px; }
+    .toggle-btn { flex: 1; padding: 8px 0; font-size: 11px; font-weight: 700; letter-spacing: 1px; border: none; cursor: pointer; background: transparent; color: #4dd0ff; font-family: 'Courier New', monospace; text-transform: uppercase; transition: all 0.15s; }
+    .toggle-btn.active { background: #4dd0ff; color: #071321; }
+    .ebat-row { display: flex; gap: 8px; }
+    .ebat-row > div { flex: 1; }
+    .vol-display { margin-top: 12px; text-align: center; padding: 10px; background: rgba(77,208,255,0.06); border-radius: 8px; }
+    .vol-display span.lbl { color: #4a7a99; font-size: 11px; letter-spacing: 1px; }
+    .vol-display span.val { color: #4dd0ff; font-size: 22px; font-weight: 900; margin-left: 6px; }
+    .section-title { font-size: 11px; letter-spacing: 1px; margin-bottom: 7px; margin-top: 4px; }
+    .chem-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; border-radius: 9px; margin-bottom: 7px;
+      background: rgba(255,255,255,0.03);
+    }
+    .chem-row .name { font-size: 12px; font-weight: 700; }
+    .chem-row .dose { font-size: 18px; font-weight: 900; }
+    .multiplier-row { display: flex; gap: 12px; }
+    .multiplier-row > div { flex: 1; }
+    .empty { text-align: center; color: #2a4a5a; padding: 24px; font-size: 13px; }
+    footer { text-align: center; color: #1a3a4a; font-size: 10px; margin-top: 16px; letter-spacing: 1px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="emoji">🏊</div>
+  <h1>Kimyasal Dozaj</h1>
+  <p>by Furkan Çal · Kimya Mühendisi</p>
+</div>
+
+<!-- Hacim -->
+<div class="card">
+  <div class="toggle-wrap">
+    <button class="toggle-btn active" id="btnTonaj" onclick="setMode('tonaj')">Manuel Giriş</button>
+    <button class="toggle-btn" id="btnEbat" onclick="setMode('ebat')">Ebat (En×Boy×Der)</button>
+  </div>
+
+  <div id="modeTonaj">
+    <label>Havuz Hacmi (m³)</label>
+    <input type="number" id="tonajInput" placeholder="Hacim gir" oninput="calculate()" />
+  </div>
+
+  <div id="modeEbat" style="display:none">
+    <div class="ebat-row">
+      <div><label>En (m)</label><input type="number" id="enInput" step="0.1" placeholder="0.0" oninput="calcEbat()" /></div>
+      <div><label>Boy (m)</label><input type="number" id="boyInput" step="0.1" placeholder="0.0" oninput="calcEbat()" /></div>
+      <div><label>Der. (m)</label><input type="number" id="derInput" step="0.1" placeholder="0.0" oninput="calcEbat()" /></div>
+    </div>
+  </div>
+
+  <div class="vol-display">
+    <span class="lbl">HACİM:</span>
+    <span class="val" id="volDisplay">—</span>
+  </div>
+</div>
+
+<!-- Çarpanlar -->
+<div class="card">
+  <div class="multiplier-row">
+    <div>
+      <label>pH Değişimi</label>
+      <input type="number" id="phAmt" value="0.1" step="0.1" min="0.1" oninput="calculate()" />
+    </div>
+    <div>
+      <label>Klor Değişimi (ppm)</label>
+      <input type="number" id="clAmt" value="1" step="0.5" min="0.5" oninput="calculate()" />
+    </div>
+  </div>
+</div>
+
+<!-- Sonuçlar -->
+<div class="card" id="results" style="display:none">
+  <label style="margin-bottom:10px">Hesaplanan Dozajlar</label>
+
+  <!-- pH -->
+  <div class="section-title" style="color:#f97316" id="phTitle"></div>
+  <div class="chem-row" style="border-left: 3px solid #f97316">
+    <span class="name" style="color:#fed7aa">pH Düşürücü %30</span>
+    <span class="dose" style="color:#f97316" id="ph30"></span>
+  </div>
+  <div class="chem-row" style="border-left: 3px solid #fb923c">
+    <span class="name" style="color:#ffedd5">pH Düşürücü %50</span>
+    <span class="dose" style="color:#fb923c" id="ph50"></span>
+  </div>
+
+  <!-- Klor ↑ -->
+  <div class="section-title" style="color:#22d3ee; margin-top:10px" id="clUpTitle"></div>
+  <div class="chem-row" style="border-left: 3px solid #22d3ee">
+    <span class="name" style="color:#caf0ff">Toz Klor %90</span>
+    <span class="dose" style="color:#22d3ee" id="cl90"></span>
+  </div>
+  <div class="chem-row" style="border-left: 3px solid #38bdf8">
+    <span class="name" style="color:#caf0ff">Toz Klor %70</span>
+    <span class="dose" style="color:#38bdf8" id="cl70"></span>
+  </div>
+  <div class="chem-row" style="border-left: 3px solid #7dd3fc">
+    <span class="name" style="color:#caf0ff">Toz Klor %56</span>
+    <span class="dose" style="color:#7dd3fc" id="cl56"></span>
+  </div>
+  <div class="chem-row" style="border-left: 3px solid #bae6fd">
+    <span class="name" style="color:#caf0ff">Sıvı Klor %12</span>
+    <span class="dose" style="color:#bae6fd" id="cl12"></span>
+  </div>
+
+  <!-- Klor ↓ -->
+  <div class="section-title" style="color:#a78bfa; margin-top:10px" id="clDownTitle"></div>
+  <div class="chem-row" style="border-left: 3px solid #a78bfa">
+    <span class="name" style="color:#e8d9ff">Klor Düşürücü %25</span>
+    <span class="dose" style="color:#a78bfa" id="meta"></span>
+  </div>
+</div>
+
+<div class="empty" id="emptyMsg">Hacim gir, dozajlar otomatik hesaplanır 👆</div>
+
+
+<script>
+  let currentMode = 'tonaj';
+  let currentVolume = 0;
+
+  function setMode(m) {
+    currentMode = m;
+    document.getElementById('modeTonaj').style.display = m === 'tonaj' ? '' : 'none';
+    document.getElementById('modeEbat').style.display = m === 'ebat' ? '' : 'none';
+    document.getElementById('btnTonaj').classList.toggle('active', m === 'tonaj');
+    document.getElementById('btnEbat').classList.toggle('active', m === 'ebat');
+    calculate();
+  }
+
+  function calcEbat() {
+    const e = parseFloat(document.getElementById('enInput').value);
+    const b = parseFloat(document.getElementById('boyInput').value);
+    const d = parseFloat(document.getElementById('derInput').value);
+    if (!isNaN(e) && !isNaN(b) && !isNaN(d)) {
+      currentVolume = e * b * d;
+    } else {
+      currentVolume = 0;
+    }
+    updateDisplay();
+  }
+
+  function calculate() {
+    if (currentMode === 'tonaj') {
+      currentVolume = parseFloat(document.getElementById('tonajInput').value) || 0;
+    }
+    updateDisplay();
+  }
+
+  function updateDisplay() {
+    const v = currentVolume;
+    document.getElementById('volDisplay').textContent = v > 0 ? (Number.isInteger(v) ? v : v.toFixed(1)) + ' m³' : '—';
+
+    const phAmt = parseFloat(document.getElementById('phAmt').value) || 0.1;
+    const clAmt = parseFloat(document.getElementById('clAmt').value) || 1;
+
+    if (v <= 0) {
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('emptyMsg').style.display = '';
+      return;
+    }
+
+    document.getElementById('results').style.display = '';
+    document.getElementById('emptyMsg').style.display = 'none';
+
+    const phMult = phAmt / 0.1;
+    document.getElementById('phTitle').textContent = `⬇ pH ${phAmt.toFixed(1)} DÜŞÜRMEK İÇİN`;
+    document.getElementById('clUpTitle').textContent = `⬆ KLOR +${clAmt} ppm İÇİN`;
+    document.getElementById('clDownTitle').textContent = `⬇ KLOR -${clAmt} ppm İÇİN`;
+
+    document.getElementById('ph30').textContent = fmt(dose(1000, v, phMult));
+    document.getElementById('ph50').textContent = fmt(dose(600, v, phMult));
+
+    document.getElementById('cl90').textContent = fmt(dose(111, v, clAmt));
+    document.getElementById('cl70').textContent = fmt(dose(143, v, clAmt));
+    document.getElementById('cl56').textContent = fmt(dose(179, v, clAmt));
+    document.getElementById('cl12').textContent = fmt(dose(833, v, clAmt));
+
+    document.getElementById('meta').textContent = fmt(dose(550, v, clAmt));
+  }
+
+  function dose(perBase, volume, mult) {
+    return (perBase / 100) * volume * mult;
+  }
+
+  function fmt(val) {
+    if (val >= 1000) return (val / 1000).toFixed(2) + ' kg';
+    return val.toFixed(0) + ' g';
+  }
+</script>
+</body>
+</html>
